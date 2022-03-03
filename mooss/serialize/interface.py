@@ -28,7 +28,13 @@ class ISerializable(ABC):
         }
     
     @classmethod
-    def is_field_in_class(cls, field_name) -> bool:
+    def is_field_serializable(cls, field_name) -> bool:
+        """
+        Check if a given field is serializable.
+        
+        :param field_name: Field's name to check.
+        :return: True if it is serializable, False otherwise.
+        """
         return field_name in cls.get_serializable_fields()
     
     @classmethod
