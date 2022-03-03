@@ -1,0 +1,12 @@
+# IDE
+.idea/
+/venv*/
+
+# Python
+__pycache__/
+/build/
+/dist/
+/*.egg-info/
+
+# Others
+.coverage

@@ -1,0 +1,7 @@
+[report]
+show_missing = True
+omit =
+    build/*
+    tests/*
+    setup.py
+    */__init__.py
