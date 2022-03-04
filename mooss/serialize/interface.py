@@ -38,29 +38,95 @@ class ISerializable(ABC):
         return field_name in cls.get_serializable_fields()
     
     @classmethod
-    def decompose_complex_types(cls, complex_type) -> list:
-        pass
-    
-    @classmethod
-    def is_type_valid(cls, expected_type, actual_type) -> bool:
+    def _is_type_valid(cls, expected_type, actual_type, process_listed_types: bool = False) -> bool:
         """
         Checks if a given type is the same or contained within a given set or expected types.
         
-        :param expected_type:
-        :param actual_type:
+        :param expected_type: [As expected by a class def, may be complex]
+        :param actual_type: [Should be basic -> std json types]
+        :param process_listed_types: ???
         :return: True if the type is valid, False otherwise.
+        :raises TypeError: ???
         """
+        
         print("> is_type_valid: '{}', '{}'".format(expected_type, actual_type))
         
-        # Checking if we have a class that implements the 'ISerializable' interface and a dict.
-        # TODO: Move down, to single stuff handling after list processing
-        print(">> Tmp: Checking for complex types...")
-        if isinstance(expected_type, type):
-            print(">> Tmp: Found one, now checking if it implements 'ISerializable'...")
-            if issubclass(expected_type, ISerializable) and actual_type is dict:
-                print(">> Tmp: Returning early due to valid check !")
-                return True
+        # Fixing some potential issues
+        if expected_type is None:
+            print(">> Fixing 'expected_type' from 'None' to 'NoneType' !")
+            expected_type = type(None)
         
+        if actual_type is None:
+            print(">> Fixing 'actual_type' from 'None' to 'NoneType' !")
+            actual_type = type(None)
+        
+        # Testing some basic stuff
+        if expected_type == type(None):
+            print(">> Found 'NoneType' !")
+            print(">> {} == {} -> {}".format(expected_type, actual_type, expected_type == actual_type))
+            return expected_type == actual_type
+        
+        if expected_type is Any:
+            return True
+        
+        if expected_type in [str, int, bool, float]:
+            print(">> Detected a primitive type, not performing any filtering !")
+            return expected_type is actual_type
+        elif get_origin(expected_type) is Union:
+            print(">> Detected a 'Union' or 'Optional' type")
+            for individual_expected_type in get_args(expected_type):
+                print(">> Testing '{}'...".format(individual_expected_type))
+                if cls._is_type_valid(expected_type=individual_expected_type, actual_type=actual_type,
+                                      process_listed_types=process_listed_types):
+                    print(">> Found a valid match for the union/optional !")
+                    return True
+        elif isinstance(expected_type, type):
+            # print(">> Detected a 'type' type '{}'".format(expected_type))
+            # print(">> origin:'{}' & args:'{}'".format(get_origin(expected_type), get_args(expected_type)))
+            # Catches classes, list, list[a, b], ...
+            
+            # TODO: Check if the following can be supported:
+            #  Set, collection, namedTuple, NewType, Mapping, Sequence, Sequence, TypeVar, Iterable
+            
+            # Testing for composed types
+            if get_origin(expected_type) in [list, dict, tuple, set]:
+                print(">> Encountered a composed type -> {}".format(get_args(expected_type)))
+                expected_type = get_origin(expected_type)
+            
+            # Checking for composed types and classes
+            if expected_type in [list, dict, tuple, set]:
+                # Simple list/dict/tuple
+                print(">> Simple list/dict/tuple")
+                return expected_type is actual_type
+            
+            # Checking for ISerializable interfaces
+            # This check is disgusting, but it fixes the following error with list, dict, ???:
+            # |_> TypeError: issubclass() arg 1 must be a class
+            if expected_type.__class__ is not type:
+                print(">> Should be a class a class -> '{}' !".format(expected_type.__class__))
+                print(">> Does implement ISerializable ? -> {}".format(issubclass(expected_type, ISerializable)))
+                print(">> Is actual_type a dict ? -> {}".format(actual_type is dict))
+                return issubclass(expected_type, ISerializable) and actual_type is dict  # TODO: Check for null !
+            else:
+                print(">> Not a class or None !")
+                raise TypeError("The expected type '{}' is a type that is not supported, nor is it a class !".format(
+                    expected_type
+                ))
+        
+        elif isinstance(expected_type, list):
+            # Only gets triggered when passing list of individual types, not complex lists such as 'list[a, b]' !
+            if process_listed_types:
+                for individual_expected_type in expected_type:
+                    if cls._is_type_valid(expected_type=individual_expected_type, actual_type=actual_type,
+                                          process_listed_types=process_listed_types):
+                        return True
+            else:
+                raise TypeError("The expected type '{}' is a list of individual types !")
+        else:
+            print(">> WTF !!!")
+            raise TypeError("The expected type '{}' is not supported by 'ISerializable' !".format(expected_type))
+        
+        """
         # Checking if we have a Union, and converting it to a list if needed.
         if get_origin(expected_type) is Union:
             print(">> The 'expected_type' parameter is a Union, converting to a list...")
@@ -74,19 +140,10 @@ class ISerializable(ABC):
                 if cls.is_type_valid(expected_individual_type, actual_type):
                     return True
             return False
+        """
         
-        detected_valid_types = []
-        
-        if expected_type in [str, int, bool, float]:
-            print(">> Detected a primitive type, adding it as-is to the 'detected_valid_types' list !")
-            detected_valid_types.append(expected_type)
-        
-        # TODO: Special check for 'Any' !
-        
-        print(">> Comparing actual_type '{}' against detected_valid_types '{}' gotten from expected_type '{}' !".format(
-            actual_type, detected_valid_types, expected_type
-        ))
-        return actual_type in detected_valid_types
+        # Default return case when encountering supported types.
+        return False
     
     @classmethod
     def _deserialize_value(cls, value_class: type, value_data, allow_unknown: bool = False, validate_type: bool = True,
@@ -107,7 +164,7 @@ class ISerializable(ABC):
         
         # Validating the type.
         if validate_type:
-            if not cls.is_type_valid(value_class, type(value_data)):
+            if not cls._is_type_valid(value_class, type(value_data)):
                 raise TypeError(">> The '{}' type is supported by '{}'".format(type(value_data), value_class))
         
         # print("{} -> {}".format(value_class, value_data))
