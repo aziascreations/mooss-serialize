@@ -9,14 +9,23 @@ setuptools.setup(
     version=VERSION,
     author="Herwin Bozet",
     author_email="herwin.bozet@gmail.com",
-    description="Test",
+    maintainer="Herwin Bozet",
+    maintainer_email="herwin.bozet@gmail.com",
+    description="A Python package to help with serialization and deserialization of "
+                "dataclasses through the help of a common interface while also insuring "
+                "the parsed data is properly typed and handled in many situations.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="http://localhost/",
+    url="https://github.com/aziascreations/mooss-serialize",
     packages=setuptools.find_packages(),
-    install_requires=[
-        'mooss-core>=0.0.1',
-    ],
+    install_requires=[],
+    extras_require={
+        "dev": [
+            "nose2>=0.11.0,<1.0.0",
+            "semver>=2.13.0,<3.0.0",
+            "check-manifest>=0.47,<1.0"
+        ],
+    },
     classifiers=[
         "Development Status :: 1 - Planning",
         "License :: OSI Approved :: The Unlicense (Unlicense)",

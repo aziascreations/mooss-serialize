@@ -4,4 +4,4 @@ omit =
     build/*
     tests/*
     setup.py
-    */__init__.py
+    mooss/__init__.py

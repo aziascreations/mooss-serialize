@@ -14,9 +14,9 @@ class TestedClass(ISerializable):
     boolean: bool
 
 
-class TestStandardTypes(unittest.TestCase):
+class TestPrimitiveTypes(unittest.TestCase):
     def test_all_set(self):
-        """Testing if a class with standard types can be properly deserialized."""
+        """Testing if a class with primitive types can be properly deserialized."""
         
         data = {
             'integer': 42,
@@ -33,7 +33,7 @@ class TestStandardTypes(unittest.TestCase):
         self.assertEqual(data.get('boolean'), test_class.boolean)
     
     def test_invalid_type(self):
-        """Testing if an invalidly typed variable raises a value error with standard types."""
+        """Testing if an invalidly typed primitive raises a value error with standard types."""
         
         data = {
             'integer': 42,
