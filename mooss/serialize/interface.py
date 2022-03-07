@@ -257,6 +257,8 @@ class ISerializable(ABC):
         
         # TODO: allow_primitive_type_casting: bool = False
         
+        # FIXME: Check for missing required fields, or let the interpreter do it during instantiation ?
+        
         print("> from_dict: '{}', '{}'".format(data_dict, allow_unknown))
         
         # Checking if we have reached the end of the allowed recursive depth.
@@ -301,7 +303,7 @@ class ISerializable(ABC):
         
         # Analysing all valid fields before using them to instantiate a new 'ISerializable' class.
         for expected_field_name, expected_field_definition in cls._get_serializable_fields().items():
-            print(">> Analysing {} => '{}'...".format(expected_field_name, expected_field_definition))
+            print(">> Analysing '{}' => '{}'...".format(expected_field_name, expected_field_definition))
             
             # Checking if the field is present in the given data and fixing it if possible.
             if expected_field_name not in _temp_data_dict:
@@ -320,7 +322,7 @@ class ISerializable(ABC):
             is_type_valid, field_simplified_type = cls._analyse_type(
                 expected_type=expected_field_definition.type,
                 actual_type=type(_temp_data_dict.get(expected_field_name)),
-                process_listed_types=True)
+                process_listed_types=False)
             print(">> Grabbed more info: is_type_Valid:{}, field_simplified_type:{}".format(
                 is_type_valid, field_simplified_type
             ))
@@ -332,10 +334,24 @@ class ISerializable(ABC):
                     type_expected=expected_field_definition.type
                 ))
             
+            # print("FIELD_TYPE_UNKNOWN => '{}'".format(EFieldType.FIELD_TYPE_UNKNOWN))
+            # print("FIELD_TYPE_PRIMITIVE => '{}'".format(EFieldType.FIELD_TYPE_PRIMITIVE))
+            # print("FIELD_TYPE_ITERABLE => '{}'".format(EFieldType.FIELD_TYPE_ITERABLE))
+            # print("FIELD_TYPE_SERIALIZABLE => '{}'".format(EFieldType.FIELD_TYPE_SERIALIZABLE))
+            
             # Attempting to parse the data if, and only if, it is needed to do so.
             if field_simplified_type == EFieldType.FIELD_TYPE_ITERABLE:
                 # We are checking for potentially listed 'ISerializable' classes.
                 print(">> Type: Is iterable !")
+                
+                is_listed_type_valid, listed_field_simplified_type = cls._analyse_type(
+                    expected_type=get_args(expected_field_definition.type),
+                    actual_type=type(_temp_data_dict.get(expected_field_name)[0]),
+                    process_listed_types=True)
+                print(">> Grabbed more info on listed type: is_type_Valid:{}, field_simplified_type:{}".format(
+                    is_listed_type_valid, listed_field_simplified_type
+                ))
+                
                 """
                 return [cls._deserialize_value(
                     value_class=get_args(value_class)[0],
@@ -351,10 +367,9 @@ class ISerializable(ABC):
                 # value_class: ISerializable
                 # return value_class.from_dict(data_dict=value_data, allow_unknown=allow_unknown)
             else:
-                print(">> Type: Other, ignoring it !")
+                print(">> Type: Other/primitive/list, will be using it as-is !")
                 pass
         
-        # FIXME: Handle default values !
         # TODO: Implement check for nullable fields !
         # TODO: Unknowns !
         
