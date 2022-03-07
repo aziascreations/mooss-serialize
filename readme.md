@@ -9,6 +9,10 @@ This package was created because I often found myself needing to deserialize nes
 types, and because all other solutions I found were either too bloated or didn't work properly with what I had.<br>
 It is by no mean a replacement for other packages, but [...].
 
+[strong typecheck, with actual recursive typecasting to use shit as classes]
+
+[Intended to parse data from text, not security against lambdas, callables !!!]
+
 ## Usage
 [Mention how it uses annotations !]
 
@@ -68,10 +72,20 @@ print(person_full)
 ```
 
 ## Supported type annotations
-The following types are supported by the interface:
-* Primitives: `str`, `int`, `float`, `bool`
+The following type annotations are properly supported by the interface:
+* **Primitives:**<br>
+`str`, `int`, `float`, `bool`
+* **Simple sets:**<br>
+`list`, `dict`, `tuple`, `set`
+* **Composed sets:**<br>
+`list[...]`, `dict[...]`, `tuple[...]`, `set[...]`
+* **Variable types:**<br>
+`Union`, `Optional`, `Any`
 
-Any other object type should be ignored and if possible, instantiated as a dict.
+These types should cover 99% of the uses cases for this package, however, in the event you would wish to use
+unsupported types, you can always do so by [... auto_typecast ?]
+
+// Any other object type should be ignored and if possible, instantiated as a dict.
 
 ## Contributing
 If you want more information on how to contribute to this package, you should refer to [develop.md](develop.md).

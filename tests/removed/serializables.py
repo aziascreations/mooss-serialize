@@ -53,6 +53,8 @@ class TestSerializableTypeValidity(unittest.TestCase):
         }
         value: TestedParentClass = TestedParentClass.from_dict(data_dict=data, allow_unknown=False)
         
+        print(value)
+        
         # Testing
         self.assertEqual(TestedParentClass, type(value))
         self.assertEqual(TestedNestedClass, type(value.field_class_nested))

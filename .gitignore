@@ -12,3 +12,4 @@ __pycache__/
 .coverage
 .pytest_cache/
 helpers.py
+tmp*.py
