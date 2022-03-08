@@ -1,4 +1,14 @@
 # Mooss - Serialize
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/mooss-serialize.svg)](https://pypi.python.org/pypi/mooss-serialize/)
+&nbsp;&nbsp;
+[![PyPI status](https://img.shields.io/pypi/status/mooss-serialize.svg)](https://pypi.python.org/pypi/mooss-serialize/)
+[![PyPi version](https://badgen.net/pypi/v/mooss-serialize/)](https://pypi.com/project/mooss-serialize)
+&nbsp;&nbsp;
+[![PyPI download month](https://img.shields.io/pypi/dm/mooss-serialize.svg)](https://pypi.python.org/pypi/mooss-serialize/)
+&nbsp;&nbsp;
+[![GitHub issues](https://img.shields.io/github/issues/aziascreations/mooss-serialize.svg)](https://GitHub.com/aziascreations/mooss-serialize/issues/)
+&nbsp;&nbsp;
+[![PyPI license](https://img.shields.io/pypi/l/mooss-serialize.svg)](https://pypi.python.org/pypi/mooss-serialize/)
 
 **⚠️ This package is a work-in-progress, it is not suitable nor reliable for any applications yet ⚠️**
 
