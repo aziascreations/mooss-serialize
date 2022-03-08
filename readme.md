@@ -1,6 +1,6 @@
 # Mooss - Serialize
 
-**⚠️ This package is a woro-in-progress, it is not suitable nor reliable yet ⚠️**
+**⚠️ This package is a work-in-progress, it is not suitable nor reliable for production-level applications yet ⚠️**
 
 A Python package to help with serialization and deserialization of *dataclasses* through the help of a common interface
 while also insuring the parsed data is properly typed and handled in many situations.
@@ -71,21 +71,42 @@ person_full = Person.from_dict(data_person_full)
 print(person_full)
 ```
 
-## Supported type annotations
-The following type annotations are properly supported by the interface:
+## Type annotations
+[Explain how they are grabbed from the class definition]
+
+// Any other object type should be ignored and if possible, instantiated as a dict.
+
+### Supported types
+These types should cover 99% of the uses cases for this package, however, in the event you would wish to use
+unsupported types, you can always do so by [... auto_typecast ?]
+
 * **Primitives:**<br>
 `str`, `int`, `float`, `bool`
 * **Simple sets:**<br>
 `list`, `dict`, `tuple`, `set`
-* **Composed sets:**<br>
+* **Composed sets\*:**<br>
 `list[...]`, `dict[...]`, `tuple[...]`, `set[...]`
-* **Variable types:**<br>
+* **Variable types\*:**<br>
 `Union`, `Optional`, `Any`
 
-These types should cover 99% of the uses cases for this package, however, in the event you would wish to use
-unsupported types, you can always do so by [... auto_typecast ?]
+<sup>*: Has some limitations on what can be contained between the square brackets.</sup>
 
-// Any other object type should be ignored and if possible, instantiated as a dict.
+### Limitations
+These limitations are put in place due to the fact that I don't have the time to implement a proper way to
+support weird and unusual data types.
+
+[...] If you want to handle these, you can either add support for it yourself or use a specialized and bulkier
+package.
+
+* Mixed complex types: list[ISerializable, primitive]
+  * A mix of primitives and sets should work but should preferably not be used.
+
+#### More specific and rare types
+Types and utilities such as the ones listed below should be supported at some point, but since it is not urgent,
+there is no set timeline for their implementation.
+
+*List of types and utilities that may be supported:*<br>
+`Set`, `Collection`, `NamedTuple`, `NewType`, `Mapping`, `Sequence`, `TypeVar` and `Iterable`.
 
 ## Contributing
 If you want more information on how to contribute to this package, you should refer to [develop.md](develop.md).

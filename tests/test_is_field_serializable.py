@@ -14,16 +14,16 @@ class TestedClass(ISerializable):
 
 class TestSerializableFieldGetter(unittest.TestCase):
     def test_serializable_fields(self):
-        self.assertTrue(TestedClass.is_field_serializable("field1"))
+        self.assertTrue(TestedClass._is_field_serializable("field1"))
     
     def test_unserializable_fields(self):
         for member_name in dir(TestedClass):
             if member_name != "field1":
-                self.assertFalse(TestedClass.is_field_serializable(member_name))
+                self.assertFalse(TestedClass._is_field_serializable(member_name))
     
     def test_non_existent_fields(self):
         for i in range(10):
-            self.assertFalse(TestedClass.is_field_serializable("non_existent_{}".format(random.randint(100, 999))))
+            self.assertFalse(TestedClass._is_field_serializable("non_existent_{}".format(random.randint(100, 999))))
 
 
 # Main

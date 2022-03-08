@@ -13,7 +13,7 @@ class TestVersion(unittest.TestCase):
         """
         
         # Assertion is done through the absence of any 'ValueError' exception.
-        semver.parse(__version__.VERSION)
+        semver.VersionInfo.parse(__version__.VERSION)
 
 
 # Main

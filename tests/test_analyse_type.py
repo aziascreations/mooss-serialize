@@ -1,15 +1,19 @@
 # Imports
 from dataclasses import dataclass
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, Set
 import unittest
 
 from mooss.serialize.interface import ISerializable
-from mooss.serialize.field_types import EFieldType
+from mooss.serialize._field_types import EFieldType
 
 
 # Classes
 @dataclass
 class TestedValidClass(ISerializable):
+    pass
+
+
+class GenericClass:
     pass
 
 
@@ -63,6 +67,25 @@ class TestTypeAnalysis(unittest.TestCase):
         print("Testing the absence of 'TypeError' with 'Any' and list of individual types...")
         self.assertEqual((True, EFieldType.FIELD_TYPE_UNKNOWN),
                          ISerializable._analyse_type(Any, int, process_listed_types=False))
+    
+    def test_invalid_special_exceptions(self):
+        """
+        Testing some specific exceptions that may be handled differently later on.
+        """
+        
+        print("Testing is a 'TypeError' is raise with unknown classes...")
+        # Testing with 'GenericClass' since they are not supported yet and should trigger this specific exception.
+        try:
+            ISerializable._analyse_type(GenericClass, int)
+        except TypeError as err:
+            self.assertTrue("nor is it a class !" in str(err))
+        
+        print("Testing is a 'TypeError' is raise with unknown types...")
+        # Testing with a 'Set' since they are not supported yet and should trigger this exception.
+        try:
+            ISerializable._analyse_type(Set, int)
+        except TypeError as err:
+            self.assertTrue("is not supported by 'ISerializable' !" in str(err))
 
 
 # Main

@@ -5,3 +5,5 @@ omit =
     tests/*
     setup.py
     mooss/__init__.py
+    mooss/serialize/__init__.py
+    *tmp*.py

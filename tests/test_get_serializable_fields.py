@@ -27,7 +27,7 @@ class TestSerializableFieldGetter(unittest.TestCase):
         
         self.assertListEqual(
             sorted(expected_variables),
-            sorted(list(TestedParentClass.get_serializable_fields().keys()))
+            sorted(list(TestedParentClass._get_serializable_fields().keys()))
         )
     
     def test_children(self):
@@ -40,7 +40,7 @@ class TestSerializableFieldGetter(unittest.TestCase):
         
         self.assertListEqual(
             sorted(expected_variables),
-            sorted(list(TestedChildrenClass.get_serializable_fields().keys()))
+            sorted(list(TestedChildrenClass._get_serializable_fields().keys()))
         )
 
 

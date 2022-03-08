@@ -5,13 +5,13 @@ from dataclasses import Field, MISSING
 import json
 from typing import Union, get_origin, get_args, Any, Optional
 
-from .field_types import EFieldType
+from ._field_types import EFieldType
 
 
 # Classes
 class ISerializable(ABC):
     """
-    ???
+    Interface that provides a couple of methods to easily serialize and deserialize classes to and from dictionaries.
     """
     
     __dataclass_fields__: dict[str, Field]
@@ -19,6 +19,8 @@ class ISerializable(ABC):
     Reference to the hidden field added to classes by the @dataclass decorator to prevent PyCharm from throwing a fit
     when using this field.
     """
+    
+    # FIXME: Add check to see if the class is properly decorated !
     
     @classmethod
     def _get_serializable_fields(cls) -> dict[str, Field]:
@@ -30,7 +32,6 @@ class ISerializable(ABC):
         """
         
         # TODO: Add a way to filter out fields when declaring the class !
-        # TODO: Restore fallback for non-dataclasses !
         
         return cls.__dataclass_fields__
     
@@ -169,72 +170,6 @@ class ISerializable(ABC):
         return cls._analyse_type(expected_type, actual_type, process_listed_types)[0]
     
     @classmethod
-    def _deserialize_value(cls, value_class: type, value_data: Any, allow_unknown: bool = False,
-                           validate_type: bool = True, parsing_depth: int = -1):
-        """
-        Deserializes a given value into the given type while checking for strict typing and recursive depth if needed.
-        
-        :param value_class: Expected type of the parsed data as defined in the class' annotations.
-        :param value_data: The data that will be deserialized into a variable of the given 'value_class'.
-        :param allow_unknown: Unused unless a subclass of 'ISerializable' is encountered, it is passed to and from
-         'cls.from_dict()'.
-        :param validate_type: A switch to toggle the strict typechecks that may raise 'TypeError' exceptions.
-        :param parsing_depth: The amount of recursive call that can be done to parse nested deserializable structures.
-        :return: The deserialized value as a 'ISerializable' object, or its default value given in 'value_data'.
-        :raises TypeError: If a mismatch between the expected and received data's types is found, requires
-         'validate_type' to be set to 'True'.
-        """
-        
-        print("> _deserialize_value: '{}', '{}', {}, {}, {}".format(value_class, value_data, allow_unknown,
-                                                                    validate_type, parsing_depth))
-        
-        # Checking if we have reached the end of the allowed recursive depth.
-        if parsing_depth == 0:
-            print(">> Ignoring due to depth !")
-            return value_data
-        
-        # Validating the type.
-        if validate_type:
-            if not cls._is_type_valid(value_class, type(value_data)):
-                raise TypeError(">> The '{}' type is supported by '{}'".format(type(value_data), value_class))
-        
-        print("{} -> {}".format(value_class, value_data))
-        
-        # Skipping Union (Will be changed !!!)
-        if get_origin(value_class) is Union:
-            possible_types = get_args(value_class)
-            # Checking if there are too many types
-            if type(None) in possible_types:
-                # We can assume that we will have some data since we are checking the field itself, and we need a value
-                #  for that.
-                possible_types = [x for x in possible_types if x is not type(None)]
-            
-            if len(possible_types) > 1:
-                print("Too many types for '{}', using the first non-NoneType one !".format(get_args(value_class)))
-            
-            print(">> Now treating '{}' as '{}' !".format(value_class, possible_types[0]))
-            print("   |_> {}".format(value_data))
-            value_class = possible_types[0]
-        
-        if get_origin(value_class) is list:
-            # print()
-            return [cls._deserialize_value(
-                value_class=get_args(value_class)[0],
-                value_data=x,
-                allow_unknown=allow_unknown
-            ) for x in value_data]
-        
-        if get_origin(value_class) is not None:
-            print(">> Encountered unhandled origin type: {}".format(value_class))
-        
-        if issubclass(value_class, ISerializable):
-            print(">> Deserializing into '{}' from '{}' !".format(value_class, value_data))
-            value_class: ISerializable
-            return value_class.from_dict(data_dict=value_data, allow_unknown=allow_unknown)
-        
-        return value_data
-    
-    @classmethod
     def from_dict(cls, data_dict: dict, allow_unknown: bool = False, add_unknown_as_is: bool = False,
                   allow_as_is_unknown_overloading: bool = False, allow_missing_required: bool = False,
                   allow_missing_nullable: bool = True, add_unserializable_as_dict: bool = False,
@@ -366,7 +301,6 @@ class ISerializable(ABC):
                 print(">> Type: Is serializable ! -> {}".format(expected_field_definition.type))
                 print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
                 
-                # FIXME: This !!!
                 _temp_data_dict[expected_field_name] = expected_field_definition.type.from_dict(
                     data_dict=_temp_data_dict.get(expected_field_name),
                     allow_unknown=allow_unknown,
@@ -381,22 +315,51 @@ class ISerializable(ABC):
                 )
                 
                 print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
-                
-                # value_class: ISerializable
-                # return value_class.from_dict(data_dict=value_data, allow_unknown=allow_unknown)
             else:
                 print(">> Type: Other/primitive/list, will be using it as-is !")
                 pass
         
         # TODO: Implement check for nullable fields !
-        # TODO: Unknowns !
+        # TODO: Unknowns & default values !
         
         # Preparing the returned class.
         return cls(**_temp_data_dict)
     
     @classmethod
-    def from_json(cls, data_json: str, allow_unknown: bool = False):
-        return ISerializable.from_dict(json.loads(data_json), allow_unknown)
+    def from_json(cls, data_json: str, allow_unknown: bool = False, add_unknown_as_is: bool = False,
+                  allow_as_is_unknown_overloading: bool = False, allow_missing_required: bool = False,
+                  allow_missing_nullable: bool = True, add_unserializable_as_dict: bool = False,
+                  validate_type: bool = True, parsing_depth: int = -1, do_deep_copy: bool = False):
+        """
+        ???
+        
+        :param data_json:
+        :param allow_unknown:
+        :param add_unknown_as_is:
+        :param allow_as_is_unknown_overloading:
+        :param allow_missing_required:
+        :param allow_missing_nullable:
+        :param add_unserializable_as_dict:
+        :param validate_type:
+        :param parsing_depth:
+        :param do_deep_copy:
+        :return: The parsed 'ISerializable' class.
+        :raises TypeError: If a mismatch between the expected and received data's types is found, requires
+         'validate_type' to be set to 'True'.
+        """
+        
+        return cls.from_dict(
+            data_dict=json.loads(data_json),
+            allow_unknown=allow_unknown,
+            add_unknown_as_is=add_unknown_as_is,
+            allow_as_is_unknown_overloading=allow_as_is_unknown_overloading,
+            allow_missing_required=allow_missing_required,
+            allow_missing_nullable=allow_missing_nullable,
+            add_unserializable_as_dict=add_unserializable_as_dict,
+            validate_type=validate_type,
+            parsing_depth=parsing_depth,
+            do_deep_copy=do_deep_copy,
+        )
     
     @classmethod
     def to_dict(cls):
