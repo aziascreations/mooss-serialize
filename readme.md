@@ -1,6 +1,6 @@
 # Mooss - Serialize
 
-**⚠️ This package is a work-in-progress, it is not suitable nor reliable for production-level applications yet ⚠️**
+**⚠️ This package is a work-in-progress, it is not suitable nor reliable for any applications yet ⚠️**
 
 A Python package to help with serialization and deserialization of *dataclasses* through the help of a common interface
 while also insuring the parsed data is properly typed and handled in many situations.
@@ -9,12 +9,11 @@ This package was created because I often found myself needing to deserialize nes
 types, and because all other solutions I found were either too bloated or didn't work properly with what I had.<br>
 It is by no mean a replacement for other packages, but [...].
 
-[strong typecheck, with actual recursive typecasting to use shit as classes]
+[strong typecheck, with actual recursive typecasting]
 
-[Intended to parse data from text, not security against lambdas, callables !!!]
+[Intended to parse data from text, no strong security against lambdas, callables !!!]
 
-## Usage
-[Mention how it uses annotations !]
+## Setup
 
 ### Requirements
 * Python 3.9 or newer.
@@ -25,6 +24,13 @@ Run one of the following commands to install the package:
 python -m pip install --upgrade mooss-serialize
 pip install --upgrade mooss-serialize
 ```
+
+## Usage
+In order to use this package, you simply have to create a class that extends the provided `ISerializable` interface
+that also has the `dataclass` decorator, add some variable annotations with the desired types, and then use the
+provided class methods to serialize and deserialize it easily.
+
+See the examples below for more information
 
 ### Creating classes
 The following classes have more complex and fluid typing for their variables that will help illustrate the main
@@ -72,7 +78,13 @@ print(person_full)
 ```
 
 ## Type annotations
-[Explain how they are grabbed from the class definition]
+Since the `dataclass` decorator is required on any class that extends `ISerializable`, the methods can easily detect
+and validate the different types for the given data, which in turn can help you reduce the amount of check you will
+have to perform on the final deserialized data.
+
+This approach was used due to the fact that many one-liners and small helpers available on the internet do not
+implement this type of checks and usually leave you with potentially invalidly-typed data, or simply data that is not
+deserialized properly in the case of nested deserializable classes.
 
 // Any other object type should be ignored and if possible, instantiated as a dict.
 

@@ -62,11 +62,13 @@ class ISerializable(ABC):
         """
         Analyses a given type and checks the given types are compatible and which type of field it is.
         
-        :param expected_type: [As expected by a class def, may be complex]
-        :param actual_type: [Should be basic -> std json types]
-        :param process_listed_types: ???
-        :return: True if the type is valid, False otherwise.
-        :raises TypeError: ???
+        The 'expected_type' parameter should be the class' annotations' types.
+        
+        :param expected_type: The expected type against which 'actual_type' will be compared.
+        :param actual_type: The type of the data to be deserialized which will be compared against 'expected_type'.
+        :param process_listed_types: Performs a recursive check on types given in a list.  (Not list with arguments !)
+        :return: True if the type is valid and compatible, False otherwise.
+        :raises TypeError: If one of the given type is not supported internally.
         """
         
         # print("> is_type_valid: '{}', '{}'".format(expected_type, actual_type))
@@ -160,11 +162,13 @@ class ISerializable(ABC):
         """
         Checks if a given type is the same or contained within a given set or expected types.
         
-        :param expected_type: [As expected by a class def, may be complex]
-        :param actual_type: [Should be basic -> std json types]
-        :param process_listed_types: ???
-        :return: True if the type is valid, False otherwise.
-        :raises TypeError: ???
+        The 'expected_type' parameter should be the class' annotations' types.
+        
+        :param expected_type: The expected type against which 'actual_type' will be compared.
+        :param actual_type: The type of the data to be deserialized which will be compared against 'expected_type'.
+        :param process_listed_types: Performs a recursive check on types given in a list.  (Not list with arguments !)
+        :return: True if the type is valid and compatible, False otherwise.
+        :raises TypeError: If one of the given type is not supported internally.
         """
         
         return cls._analyse_type(expected_type, actual_type, process_listed_types)[0]
@@ -175,18 +179,19 @@ class ISerializable(ABC):
                   allow_missing_nullable: bool = True, add_unserializable_as_dict: bool = False,
                   validate_type: bool = True, parsing_depth: int = -1, do_deep_copy: bool = False):
         """
-        ???
+        Deserialize a given dict into the relevant serializable class.
         
-        :param data_dict:
-        :param allow_unknown:
-        :param add_unknown_as_is:
-        :param allow_as_is_unknown_overloading:
-        :param allow_missing_required:
-        :param allow_missing_nullable:
-        :param add_unserializable_as_dict:
-        :param validate_type:
-        :param parsing_depth:
-        :param do_deep_copy:
+        :param data_dict: Dictionary containing the data to deserialize.
+        :param allow_unknown: Allow unknown fields to be processed, other parameters will determine their use if 'True'.
+        :param add_unknown_as_is: ! Not used yet !
+        :param allow_as_is_unknown_overloading: ! Not used yet !
+        :param allow_missing_required: ! Not used yet !
+        :param allow_missing_nullable: ! Not used yet !
+        :param add_unserializable_as_dict: ! Not used yet !
+        :param validate_type: Enables a strict type check between the class' serializable fields and the given data.
+        :param parsing_depth: The recursive depth to which the deserialization process will go.  (-1 means infinite)
+        :param do_deep_copy: Performs a deep copy of the given 'data_dict' to prevent modifications from affecting
+        other variables that may reference it.
         :return: The parsed 'ISerializable' class.
         :raises TypeError: If a mismatch between the expected and received data's types is found, requires
          'validate_type' to be set to 'True'.
@@ -196,20 +201,20 @@ class ISerializable(ABC):
         
         # FIXME: Check for missing required fields, or let the interpreter do it during instantiation ?
         
-        print("> from_dict: '{}', '{}'".format(data_dict, allow_unknown))
+        # print("> from_dict: '{}', '{}'".format(data_dict, allow_unknown))
         
         # Checking if we have reached the end of the allowed recursive depth.
         if parsing_depth == 0:
-            print(">> ")
+            # print(">> ")
             return data_dict
         
         # Checking if we need to do a deep copy to prevent weird interactions if the dict is passed by reference.
         _temp_data_dict: dict[str, Any]
         if do_deep_copy:
-            print(">> Doing deep copy !")
+            # print(">> Doing deep copy !")
             _temp_data_dict = copy.deepcopy(data_dict)
         else:
-            print(">> Doing shallow copy !")
+            # print(">> Doing shallow copy !")
             _temp_data_dict = copy.copy(data_dict)
         
         # Checking for unknown fields.
@@ -221,37 +226,37 @@ class ISerializable(ABC):
         """
         
         for field_name in _temp_data_dict.keys():
-            print(">> Checking what to do with {}...".format(field_name))
+            # print(">> Checking what to do with {}...".format(field_name))
             if not cls._is_field_serializable(field_name):
                 if allow_unknown:
                     if add_unknown_as_is:
-                        print(">> Separating")
+                        # print(">> Separating")
                         # Separating them out for later.
                         _unknown_data[field_name] = _temp_data_dict.pop(field_name)
                     else:
-                        print(">> Removing")
+                        # print(">> Removing")
                         # Removing them to simply ignore them.
                         _temp_data_dict.pop(field_name)
                 else:
-                    print(">> Spazing out")
+                    # print(">> Raising error")
                     # Not allowing any.
                     raise ValueError("The field '{}' is not present in the '{}' class !".format(
                         field_name, cls.__name__))
         
         # Analysing all valid fields before using them to instantiate a new 'ISerializable' class.
         for expected_field_name, expected_field_definition in cls._get_serializable_fields().items():
-            print(">> Analysing '{}' => '{}'...".format(expected_field_name, expected_field_definition))
+            # print(">> Analysing '{}' => '{}'...".format(expected_field_name, expected_field_definition))
             
             # Checking if the field is present in the given data and fixing it if possible.
             if expected_field_name not in _temp_data_dict:
-                print(">> Not found in given dict !")
+                # print(">> Not found in given dict !")
                 # Checking if it has a default value in its class' definition.
                 if expected_field_definition.default is MISSING:
                     raise ValueError("Could not get a default value for the '{}' expected field in '{}' !".format(
                         expected_field_name, cls.__name__
                     ))
                 else:
-                    print(">> Assigned '{}' as default value !".format(expected_field_definition.default))
+                    # print(">> Assigned '{}' as default value !".format(expected_field_definition.default))
                     # TODO: Check if Field lists work properly !
                     _temp_data_dict[expected_field_name] = expected_field_definition.default
             
@@ -260,9 +265,9 @@ class ISerializable(ABC):
                 expected_type=expected_field_definition.type,
                 actual_type=type(_temp_data_dict.get(expected_field_name)),
                 process_listed_types=False)
-            print(">> Grabbed more info: is_type_Valid:{}, field_simplified_type:{}".format(
-                is_type_valid, field_simplified_type
-            ))
+            # print(">> Grabbed more info: is_type_Valid:{}, field_simplified_type:{}".format(
+            #     is_type_valid, field_simplified_type
+            # ))
             
             # Checking if the expected types are compatible.
             if validate_type and not is_type_valid:
@@ -279,15 +284,15 @@ class ISerializable(ABC):
             # Attempting to parse the data if, and only if, it is needed to do so.
             if field_simplified_type == EFieldType.FIELD_TYPE_ITERABLE:
                 # We are checking for potentially listed 'ISerializable' classes.
-                print(">> Type: Is iterable !")
+                # print(">> Type: Is iterable !")
                 
                 is_listed_type_valid, listed_field_simplified_type = cls._analyse_type(
                     expected_type=get_args(expected_field_definition.type),
                     actual_type=type(_temp_data_dict.get(expected_field_name)[0]),
                     process_listed_types=True)
-                print(">> Grabbed more info on listed type: is_type_Valid:{}, field_simplified_type:{}".format(
-                    is_listed_type_valid, listed_field_simplified_type
-                ))
+                # print(">> Grabbed more info on listed type: is_type_Valid:{}, field_simplified_type:{}".format(
+                #     is_listed_type_valid, listed_field_simplified_type
+                # ))
                 
                 """
                 return [cls._deserialize_value(
@@ -298,8 +303,8 @@ class ISerializable(ABC):
                 """
             
             if field_simplified_type == EFieldType.FIELD_TYPE_SERIALIZABLE:
-                print(">> Type: Is serializable ! -> {}".format(expected_field_definition.type))
-                print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
+                # print(">> Type: Is serializable ! -> {}".format(expected_field_definition.type))
+                # print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
                 
                 _temp_data_dict[expected_field_name] = expected_field_definition.type.from_dict(
                     data_dict=_temp_data_dict.get(expected_field_name),
@@ -314,9 +319,9 @@ class ISerializable(ABC):
                     do_deep_copy=do_deep_copy,
                 )
                 
-                print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
+                # print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
             else:
-                print(">> Type: Other/primitive/list, will be using it as-is !")
+                # print(">> Type: Other/primitive/list, will be using it as-is !")
                 pass
         
         # TODO: Implement check for nullable fields !
@@ -329,23 +334,23 @@ class ISerializable(ABC):
     def from_json(cls, data_json: str, allow_unknown: bool = False, add_unknown_as_is: bool = False,
                   allow_as_is_unknown_overloading: bool = False, allow_missing_required: bool = False,
                   allow_missing_nullable: bool = True, add_unserializable_as_dict: bool = False,
-                  validate_type: bool = True, parsing_depth: int = -1, do_deep_copy: bool = False):
+                  validate_type: bool = True, parsing_depth: int = -1):
         """
-        ???
+        Deserialize a given json-encoded dict into the relevant serializable class.
         
-        :param data_json:
-        :param allow_unknown:
-        :param add_unknown_as_is:
-        :param allow_as_is_unknown_overloading:
-        :param allow_missing_required:
-        :param allow_missing_nullable:
-        :param add_unserializable_as_dict:
-        :param validate_type:
-        :param parsing_depth:
-        :param do_deep_copy:
+        :param data_json: Json string containing the data to parse and then deserialize.
+        :param allow_unknown: Allow unknown fields to be processed, other parameters will determine their use if 'True'.
+        :param add_unknown_as_is: ! Not used yet !
+        :param allow_as_is_unknown_overloading: ! Not used yet !
+        :param allow_missing_required: ! Not used yet !
+        :param allow_missing_nullable: ! Not used yet !
+        :param add_unserializable_as_dict: ! Not used yet !
+        :param validate_type: Enables a strict type check between the class' serializable fields and the given data.
+        :param parsing_depth: The recursive depth to which the deserialization process will go.  (-1 means infinite)
         :return: The parsed 'ISerializable' class.
         :raises TypeError: If a mismatch between the expected and received data's types is found, requires
          'validate_type' to be set to 'True'.
+        :raises JSONDecodeError: If the given 'data_json' is not a properly formatted JSON string.
         """
         
         return cls.from_dict(
@@ -358,12 +363,11 @@ class ISerializable(ABC):
             add_unserializable_as_dict=add_unserializable_as_dict,
             validate_type=validate_type,
             parsing_depth=parsing_depth,
-            do_deep_copy=do_deep_copy,
+            do_deep_copy=False,
         )
     
     @classmethod
     def to_dict(cls):
-        # raise NotImplementedError("The method 'to_dict()' is not implemented yet !")
         pass
     
     @classmethod
