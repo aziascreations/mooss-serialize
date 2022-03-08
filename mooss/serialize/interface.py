@@ -1,23 +1,24 @@
 # Imports
 from abc import ABC
 import copy
+from dataclasses import Field, MISSING
 import json
-import dataclasses
-from dataclasses import dataclass, Field
 from typing import Union, get_origin, get_args, Any, Optional
 
 from .field_types import EFieldType
 
-# Notes
-"""
-It should be possible to simplify a lot of stuff by using ISerializable.__dataclass_fields__.values() on dataclasses !
-See: dataclasses.fields()
-"""
-
 
 # Classes
 class ISerializable(ABC):
+    """
+    ???
+    """
+    
     __dataclass_fields__: dict[str, Field]
+    """
+    Reference to the hidden field added to classes by the @dataclass decorator to prevent PyCharm from throwing a fit
+    when using this field.
+    """
     
     @classmethod
     def _get_serializable_fields(cls) -> dict[str, Field]:
@@ -29,6 +30,7 @@ class ISerializable(ABC):
         """
         
         # TODO: Add a way to filter out fields when declaring the class !
+        # TODO: Restore fallback for non-dataclasses !
         
         return cls.__dataclass_fields__
     
@@ -309,7 +311,7 @@ class ISerializable(ABC):
             if expected_field_name not in _temp_data_dict:
                 print(">> Not found in given dict !")
                 # Checking if it has a default value in its class' definition.
-                if expected_field_definition.default is dataclasses.MISSING:
+                if expected_field_definition.default is MISSING:
                     raise ValueError("Could not get a default value for the '{}' expected field in '{}' !".format(
                         expected_field_name, cls.__name__
                     ))
@@ -361,9 +363,25 @@ class ISerializable(ABC):
                 """
             
             if field_simplified_type == EFieldType.FIELD_TYPE_SERIALIZABLE:
-                print(">> Type: Is serializable !")
+                print(">> Type: Is serializable ! -> {}".format(expected_field_definition.type))
+                print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
+                
                 # FIXME: This !!!
-                _temp_data_dict[expected_field_name] = _temp_data_dict.get(expected_field_name)
+                _temp_data_dict[expected_field_name] = expected_field_definition.type.from_dict(
+                    data_dict=_temp_data_dict.get(expected_field_name),
+                    allow_unknown=allow_unknown,
+                    add_unknown_as_is=add_unknown_as_is,
+                    allow_as_is_unknown_overloading=allow_as_is_unknown_overloading,
+                    allow_missing_required=allow_missing_required,
+                    allow_missing_nullable=allow_missing_nullable,
+                    add_unserializable_as_dict=add_unserializable_as_dict,
+                    validate_type=validate_type,
+                    parsing_depth=parsing_depth - 1,
+                    do_deep_copy=do_deep_copy,
+                )
+                
+                print(">> |_> {}".format(_temp_data_dict.get(expected_field_name)))
+                
                 # value_class: ISerializable
                 # return value_class.from_dict(data_dict=value_data, allow_unknown=allow_unknown)
             else:
