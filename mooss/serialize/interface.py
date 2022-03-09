@@ -197,7 +197,7 @@ class ISerializable(ABC):
          'validate_type' to be set to 'True'.
         """
         
-        # TODO: allow_primitive_type_casting: bool = False
+        # TODO: Maybe -> allow_primitive_type_casting: bool
         
         # FIXME: Check for missing required fields, or let the interpreter do it during instantiation ?
         

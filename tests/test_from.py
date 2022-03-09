@@ -1,4 +1,5 @@
 # Imports
+import copy
 import json
 from dataclasses import dataclass
 import unittest
@@ -44,32 +45,42 @@ class TestFromMethods(unittest.TestCase):
             'field_primitive_bool': True,
         }
         
-        print("> With 'from_dict'...")
+        print("> Preparing classes...")
         test_class_dict: TestedPrimitiveClass = TestedPrimitiveClass.from_dict(data_dict=data_valid)
-        self.assertEqual(data_valid.get('field_primitive_int'), test_class_dict.field_primitive_int)
-        self.assertEqual(data_valid.get('field_primitive_str'), test_class_dict.field_primitive_str)
-        self.assertEqual(data_valid.get('field_primitive_float'), test_class_dict.field_primitive_float)
-        self.assertEqual(data_valid.get('field_primitive_bool'), test_class_dict.field_primitive_bool)
-        
-        print("> With 'from_json'...")
         test_class_json: TestedPrimitiveClass = TestedPrimitiveClass.from_json(data_json=json.dumps(data_valid))
-        self.assertEqual(data_valid.get('field_primitive_int'), test_class_json.field_primitive_int)
-        self.assertEqual(data_valid.get('field_primitive_str'), test_class_json.field_primitive_str)
-        self.assertEqual(data_valid.get('field_primitive_float'), test_class_json.field_primitive_float)
-        self.assertEqual(data_valid.get('field_primitive_bool'), test_class_json.field_primitive_bool)
+        
+        print("> Checking each class...")
+        for deserialized_class in [test_class_dict, test_class_json]:
+            self.assertEqual(data_valid.get('field_primitive_int'), deserialized_class.field_primitive_int)
+            self.assertEqual(data_valid.get('field_primitive_str'), deserialized_class.field_primitive_str)
+            self.assertEqual(data_valid.get('field_primitive_float'), deserialized_class.field_primitive_float)
+            self.assertEqual(data_valid.get('field_primitive_bool'), deserialized_class.field_primitive_bool)
     
     def test_invalid_primitive(self):
         """Testing if invalid primitive types are properly treated."""
         
         print("Testing invalid primitives...")
-        data_invalid = {
+        data_valid_base = {
+            'field_primitive_int': 42,
+            'field_primitive_str': "Hello world !",
+            'field_primitive_float': 2.0,
+            'field_primitive_bool': True,
+        }
+        data_invalid_fields = {
             'field_primitive_int': "abc",
             'field_primitive_str': 123,
             'field_primitive_float': False,
             'field_primitive_bool': "yo mama !",
         }
         
-        # FIXME: Implement this !
+        print("> Testing the presence of raised exceptions...")
+        for invalid_key, invalid_value in data_invalid_fields.items():
+            print(">> Replacing '{}' from '{}' to '{}' !".format(
+                invalid_key, data_valid_base.get(invalid_key), invalid_value
+            ))
+            new_dict = copy.deepcopy(data_valid_base)
+            new_dict.update({invalid_key: invalid_value})
+            self.assertRaises(TypeError, lambda: TestedPrimitiveClass.from_dict(data_dict=new_dict))
     
     def test_nested_serializable(self):
         """
