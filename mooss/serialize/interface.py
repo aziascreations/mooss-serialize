@@ -208,16 +208,13 @@ class ISerializable(ABC):
             # print(">> ")
             return data_dict
         
-        # Checking if we need to do a deep copy to prevent weird interactions if the dict is passed by reference.
-        _temp_data_dict: dict[str, Any]
-        if do_deep_copy:
-            # print(">> Doing deep copy !")
-            _temp_data_dict = copy.deepcopy(data_dict)
-        else:
-            # print(">> Doing shallow copy !")
-            _temp_data_dict = copy.copy(data_dict)
-        
         # Checking for unknown fields.
+        _temp_data_dict: dict[str, Any] = dict()
+        """
+        Internal dictionary used to store a copy of the fields being analysed, processed and modified in order to avoid
+        changing values in the potentially referenced 'data_dict' value.
+        """
+        
         _unknown_data: Optional[dict[str, Any]] = dict() if allow_unknown and add_unknown_as_is else None
         """
         Nullable dictionary that may exist and contain any unknown field that will be handled when instantiating the
@@ -225,23 +222,29 @@ class ISerializable(ABC):
         May be left as 'None' if it shouldn't be used !
         """
         
-        for field_name in _temp_data_dict.keys():
-            # print(">> Checking what to do with {}...".format(field_name))
+        for field_name, field_value in data_dict.items():
+            # print(">> Checking what to do with '{}'...".format(field_name))
             if not cls._is_field_serializable(field_name):
                 if allow_unknown:
                     if add_unknown_as_is:
                         # print(">> Separating")
-                        # Separating them out for later.
-                        _unknown_data[field_name] = _temp_data_dict.pop(field_name)
+                        # Separating this field into '_unknown_data' for later.
+                        _unknown_data[field_name] = copy.deepcopy(field_value) \
+                            if do_deep_copy else copy.copy(field_value)
                     else:
-                        # print(">> Removing")
-                        # Removing them to simply ignore them.
-                        _temp_data_dict.pop(field_name)
+                        # print(">> Removing by ignoring it")
+                        # Ignoring this field safely by not copying it in the '_temp_data_dict' dict.
+                        pass
                 else:
                     # print(">> Raising error")
                     # Not allowing any.
                     raise ValueError("The field '{}' is not present in the '{}' class !".format(
                         field_name, cls.__name__))
+            else:
+                # print(">> Copying")
+                # Copying any other valid fields as-is.
+                _temp_data_dict[field_name] = copy.deepcopy(field_value) \
+                    if do_deep_copy else copy.copy(field_value)
         
         # Analysing all valid fields before using them to instantiate a new 'ISerializable' class.
         for expected_field_name, expected_field_definition in cls._get_serializable_fields().items():
@@ -326,9 +329,30 @@ class ISerializable(ABC):
         
         # TODO: Implement check for nullable fields !
         # TODO: Unknowns & default values !
-        
-        # Preparing the returned class.
-        return cls(**_temp_data_dict)
+
+        if allow_unknown and add_unknown_as_is:
+            # Preparing, modifying, and then returning the class.
+            _tmp_class = cls(**_temp_data_dict)
+            
+            for unknown_field_name, unknown_field_value in _unknown_data.items():
+                # print(">> Adding unknown field named '{}'".format(unknown_field_name))
+                if hasattr(_tmp_class, unknown_field_name):
+                    if allow_as_is_unknown_overloading:
+                        # print(">> Will be overloading existing attribute !")
+                        setattr(_tmp_class, unknown_field_name, unknown_field_value)
+                    else:
+                        # print(">> Cannot overload existing attribute, raising error !")
+                        raise ValueError("The unknown field '{}' cannot overload existing attributes !".format(
+                            unknown_field_name))
+                else:
+                    # print(">> Adding new non-existent attribute !")
+                    setattr(_tmp_class, unknown_field_name, unknown_field_value)
+            
+            # Now returning the class :)
+            return _tmp_class
+        else:
+            # Preparing and returning the class directly.
+            return cls(**_temp_data_dict)
     
     @classmethod
     def from_json(cls, data_json: str, allow_unknown: bool = False, add_unknown_as_is: bool = False,

@@ -100,27 +100,87 @@ class TestFromMethods(unittest.TestCase):
             }
         }
         
-        print("> With 'from_dict'...")
+        print("> Preparing classes...")
         class_dict: TestedRootNestedClass = TestedRootNestedClass.from_dict(data_dict=data)
-        
-        self.assertEqual(TestedRootNestedClass, type(class_dict))
-        self.assertEqual(TestedSingleNestedClass, type(class_dict.field_class_single_nested))
-        self.assertEqual(TestedDoubleNestedClass, type(class_dict.field_class_single_nested.field_class_double_nested))
-        
-        self.assertEqual(42, class_dict.field_int_root)
-        self.assertEqual(120, class_dict.field_class_single_nested.field_int_single_nested)
-        self.assertEqual(13, class_dict.field_class_single_nested.field_class_double_nested.field_int_double_nested)
-        
-        print("> With 'from_json'...")
         class_json: TestedRootNestedClass = TestedRootNestedClass.from_json(data_json=json.dumps(data))
         
-        self.assertEqual(TestedRootNestedClass, type(class_json))
-        self.assertEqual(TestedSingleNestedClass, type(class_json.field_class_single_nested))
-        self.assertEqual(TestedDoubleNestedClass, type(class_json.field_class_single_nested.field_class_double_nested))
+        print("> Checking each class...")
+        for deserialized_class in [class_dict, class_json]:
+            # Checking the types of deserialized ISerializable classes
+            self.assertEqual(TestedRootNestedClass, type(deserialized_class))
+            self.assertEqual(TestedSingleNestedClass, type(deserialized_class.field_class_single_nested))
+            self.assertEqual(
+                TestedDoubleNestedClass, type(deserialized_class.field_class_single_nested.field_class_double_nested)
+            )
+            
+            # Checking the value of other potentially nested variables.
+            self.assertEqual(42, deserialized_class.field_int_root)
+            self.assertEqual(120, deserialized_class.field_class_single_nested.field_int_single_nested)
+            self.assertEqual(
+                13, deserialized_class.field_class_single_nested.field_class_double_nested.field_int_double_nested
+            )
+    
+    def test_allow_unknown(self):
+        """
+        Testing if the 'allow_unknown', 'add_unknown_as_is' and 'allow_as_is_unknown_overloading' parameters
+        works properly.
+        """
         
-        self.assertEqual(42, class_json.field_int_root)
-        self.assertEqual(120, class_json.field_class_single_nested.field_int_single_nested)
-        self.assertEqual(13, class_json.field_class_single_nested.field_class_double_nested.field_int_double_nested)
+        print("Testing parameters related to unknown fields...")
+        
+        # Preparing the data
+        data = {
+            "field_int_double_nested": 42,
+            "unknown_generic_value": 120,  # This value is not defined in the 'TestedDoubleNestedClass' class !
+        }
+        
+        print("Testing with default and restrictive parameters...")
+        print("|_> allow_unknown: False  (Explicit & Default)")
+        self.assertRaises(ValueError, lambda: TestedDoubleNestedClass.from_dict(data_dict=data))
+        self.assertRaises(ValueError, lambda: TestedDoubleNestedClass.from_dict(data_dict=data, allow_unknown=False))
+        
+        print("Testing with permissive unknown parameters, and default ones for the future usage parameters...")
+        print("|_> allow_unknown: True  (Explicit)")
+        print("|_> add_unknown_as_is: False  (Explicit & Default)")
+        print("|_> allow_as_is_unknown_overloading: False  (Explicit & Default)")
+        classes_to_test = [
+            TestedDoubleNestedClass.from_dict(data_dict=data, allow_unknown=True),
+            TestedDoubleNestedClass.from_dict(data_dict=data, allow_unknown=True, add_unknown_as_is=False,
+                                              allow_as_is_unknown_overloading=False)
+        ]
+        for class_to_test in classes_to_test:
+            self.assertFalse(hasattr(class_to_test, "unknown_generic_value"))
+        
+        print("Testing with permissive unknown parameters while adding non-conflicting unknowns...")
+        print("|_> allow_unknown: True  (Explicit)")
+        print("|_> add_unknown_as_is: True  (Explicit)")
+        print("|_> allow_as_is_unknown_overloading: False  (Explicit & Default)")
+        classes_to_test = [
+            TestedDoubleNestedClass.from_dict(data_dict=data, allow_unknown=True, add_unknown_as_is=True),
+            TestedDoubleNestedClass.from_dict(data_dict=data, allow_unknown=True, add_unknown_as_is=True,
+                                              allow_as_is_unknown_overloading=False)
+        ]
+        for class_to_test in classes_to_test:
+            self.assertTrue(hasattr(class_to_test, "unknown_generic_value"))
+            self.assertEqual(data.get("unknown_generic_value"), getattr(class_to_test, "unknown_generic_value"))
+        
+        # This is the one that should be the least likely to mess everything up if changed forcefully.
+        print("Adding the '__repr__' unknown field to the 'data' dict to test 'allow_as_is_unknown_overloading'...")
+        data.update({"__repr__": "fuck"})
+        
+        print("Testing unknown parameters overloading ability...")
+        print("|_> allow_unknown: True  (Explicit)")
+        print("|_> add_unknown_as_is: True  (Explicit)")
+        print("|_> allow_as_is_unknown_overloading: True & False  (Explicit)")
+        
+        # Testing if the overloading field cannot be added back in the final class.
+        self.assertRaises(ValueError, lambda: TestedDoubleNestedClass.from_dict(
+            data_dict=data, allow_unknown=True, add_unknown_as_is=True, allow_as_is_unknown_overloading=False))
+        
+        # Testing if the overloading field can be added back in the final class.
+        mutilated_class = TestedDoubleNestedClass.from_dict(data_dict=data, allow_unknown=True, add_unknown_as_is=True,
+                                                            allow_as_is_unknown_overloading=True)
+        self.assertEqual(data.get("__repr__"), getattr(mutilated_class, "__repr__"))
 
 
 # Main
