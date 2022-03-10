@@ -13,20 +13,18 @@
 **⚠️ This package is a work-in-progress, it is not suitable nor reliable for any applications yet ⚠️**
 
 A Python package to help with serialization and deserialization of *dataclasses* through the help of a common interface
-while also insuring the parsed data is properly typed and handled in many situations.
+while also insuring the parsed data is properly typed and handled.
 
-This package was created because I often found myself needing to deserialize nested dataclasses with *complex* value
-types, and because all other solutions I found were either too bloated or didn't work properly with what I had.<br>
-It is by no mean a replacement for other packages, but [...].
+This package was created because I often found myself needing to deserialize nested dataclasses with *slightly complex*
+value types, and because all other solutions I found were either too bloated or didn't work properly with what I had.
 
-[strong typecheck, with actual recursive typecasting]
-
-[Intended to parse data from text, no strong security against lambdas, callables !!!]
+It is by no mean a replacement for other packages, but should suffice when dealing with *slightly complex* data
+structures.
 
 ## Setup
 
 ### Requirements
-* Python 3.9 or newer.
+* Python 3.9 or newer.&nbsp;&nbsp;&nbsp;&nbsp;<sub><sup>(CPython and PyPy are both supported !)</sup></sub>
 
 ### Installation
 Run one of the following commands to install the package:
@@ -36,6 +34,8 @@ pip install --upgrade mooss-serialize
 ```
 
 ## Usage
+<!-- TODO: Add references to the IDeserializable class ! -->
+
 In order to use this package, you simply have to create a class that extends the provided `ISerializable` interface
 that also has the `dataclass` decorator, add some variable annotations with the desired types, and then use the
 provided class methods to serialize and deserialize it easily.
@@ -56,7 +56,7 @@ class Address(ISerializable):
     country: str
     city: str
     zip_code: Optional[int]
-    # TODO: non-serializable bool
+    # TODO: Implement non-serializable fields  (has_multiple_mailboxes: bool)
     street: str = "Unknown"
 
 @dataclass
@@ -66,9 +66,10 @@ class Person(ISerializable):
 ```
 
 ### Preparing the raw data
-[Can be from json, toml or raw as a dict]
+We are preparing a dictionary that represent the non-deserialized data.
 ```python
-# All of the fields with nested 'ISerializable' classes
+# Representing the 'Person' and 'Address' classes.
+# The 'zip_code' field can be removed and will be 'None' since it uses the 'Optional' annotation.
 data_person_full: dict = {
     "name": "John Smith",
     "address": {
@@ -78,7 +79,14 @@ data_person_full: dict = {
         "street": "Rue de la Tribune",
     },
 }
+
+# Only representing the 'Person' class and replacing the 'Address' class by a string.
+data_person_simple: dict = {
+    "name": "John Smith",
+    "address": "Rue de la Tribune, 1000 Brussels, Belgium"
+}
 ```
+This data can also be represented as a JSON string when using `from_json` in the next step.
 
 ### Parsing the data
 ```python
@@ -86,6 +94,91 @@ person_full = Person.from_dict(data_person_full)
 
 print(person_full)
 ```
+
+### Other parameters
+The `from_dict` and `from_json` methods features a couple of parameters that can help you influence the way it will react and process some
+specific cases depending on your requirements.
+
+<details>
+    <summary>Click here to expand list of all the available parameters</summary>
+    This information is also available in the methods' docstring.
+    <table>
+        <tr>
+            <td><b>Parameter</b></td>
+            <td><b>Type</b></td>
+            <td><b>Description</b></td>
+            <td><b>Default</b></td>
+        </tr>
+        <tr>
+            <td><code>data_dict</code></td>
+            <td><code>dict</code></td>
+            <td>Data to be deserialized</td>
+            <td><i>Required</i></td>
+        </tr>
+        <tr>
+            <td><code>data_json</code></td>
+            <td><code>dict</code></td>
+            <td>Data to be parsed into a dict and be deserialized</td>
+            <td><i>Required</i></td>
+        </tr>
+        <tr>
+            <td><code>allow_unknown</code></td>
+            <td><code>bool</code></td>
+            <td>Allow unknown fields to be processed instead of raising a <code>ValueError</code> exception,
+other parameters will determine their use if <code>True</code>.</td>
+            <td><code>False</code></td>
+        </tr>
+        <tr>
+            <td><code>add_unknown_as_is</code></td>
+            <td><code>bool</code></td>
+            <td>Adds unknown fields/values as-is in the final class if <code>allow_unknown</code> is also <code>True</code>.</td>
+            <td><code>False</code></td>
+        </tr>
+        <tr>
+            <td><code>allow_as_is_unknown_overloading</code></td>
+            <td><code>bool</code></td>
+            <td>Allow unknown fields/values to overload existing class attributes.</td>
+            <td><code>False</code></td>
+        </tr>
+        <tr>
+            <td><code>allow_missing_required</code></td>
+            <td><code>bool</code></td>
+            <td>TODO</td>
+            <td><code>False</code></td>
+        </tr>
+        <tr>
+            <td><code>allow_missing_nullable</code></td>
+            <td><code>bool</code></td>
+            <td>TODO</td>
+            <td><code>False</code></td>
+        </tr>
+        <tr>
+            <td><code>add_unserializable_as_dict</code></td>
+            <td><code>bool</code></td>
+            <td>TODO</td>
+            <td><code>False</code></td>
+        </tr>
+        <tr>
+            <td><code>validate_type</code></td>
+            <td><code>bool</code></td>
+            <td>Enables a strict type check between the class' serializable fields and the given data.</td>
+            <td><code>True</code></td>
+        </tr>
+        <tr>
+            <td><code>parsing_depth</code></td>
+            <td><code>int</code></td>
+            <td>The recursive depth to which the deserialization process will go.<br>(<code>-1</code> means infinite)</td>
+            <td><code>-1</code></td>
+        </tr>
+        <tr>
+            <td><code>do_deep_copy</code></td>
+            <td><code>bool</code></td>
+            <td>Performs a deep copy of the given 'data_dict' to prevent modifications from affecting other variables
+that may reference it.</td>
+            <td><code>False</code></td>
+        </tr>
+    </table>
+</details>
 
 ## Type annotations
 Since the `dataclass` decorator is required on any class that extends `ISerializable`, the methods can easily detect
@@ -96,11 +189,12 @@ This approach was used due to the fact that many one-liners and small helpers av
 implement this type of checks and usually leave you with potentially invalidly-typed data, or simply data that is not
 deserialized properly in the case of nested deserializable classes.
 
-// Any other object type should be ignored and if possible, instantiated as a dict.
+It should be noted that undefined fields can also be supported and copied as-is if the right parameters are given
+to the methods, but this isn't done by default to prevent silent errors and overloading existing attributes !
 
 ### Supported types
 These types should cover 99% of the uses cases for this package, however, in the event you would wish to use
-unsupported types, you can always do so by [... auto_typecast ?]
+unsupported types, you can always do so by using the `Any` type to skip type checking for a given field.
 
 * **Primitives:**<br>
 `str`, `int`, `float`, `bool`

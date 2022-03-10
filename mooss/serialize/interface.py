@@ -183,8 +183,8 @@ class ISerializable(ABC):
         
         :param data_dict: Dictionary containing the data to deserialize.
         :param allow_unknown: Allow unknown fields to be processed, other parameters will determine their use if 'True'.
-        :param add_unknown_as_is: ! Not used yet !
-        :param allow_as_is_unknown_overloading: ! Not used yet !
+        :param add_unknown_as_is: Adds unknown fields/values as-is in the final class if 'allow_unknown' is also 'True'.
+        :param allow_as_is_unknown_overloading: Allow unknown fields/values to overload existing class attributes.
         :param allow_missing_required: ! Not used yet !
         :param allow_missing_nullable: ! Not used yet !
         :param add_unserializable_as_dict: ! Not used yet !
@@ -195,9 +195,12 @@ class ISerializable(ABC):
         :return: The parsed 'ISerializable' class.
         :raises TypeError: If a mismatch between the expected and received data's types is found, requires
          'validate_type' to be set to 'True'.
+        :raises ValueError: If an unknown field is given and cannot be allowed or added back in the final class.
         """
         
         # TODO: Maybe -> allow_primitive_type_casting: bool
+        
+        # TODO: Explicitly test 'do_deep_copy'
         
         # FIXME: Check for missing required fields, or let the interpreter do it during instantiation ?
         
@@ -205,7 +208,7 @@ class ISerializable(ABC):
         
         # Checking if we have reached the end of the allowed recursive depth.
         if parsing_depth == 0:
-            # print(">> ")
+            # print(">> Returning early due to recursive depth. !")
             return data_dict
         
         # Checking for unknown fields.
@@ -329,7 +332,7 @@ class ISerializable(ABC):
         
         # TODO: Implement check for nullable fields !
         # TODO: Unknowns & default values !
-
+        
         if allow_unknown and add_unknown_as_is:
             # Preparing, modifying, and then returning the class.
             _tmp_class = cls(**_temp_data_dict)
@@ -364,8 +367,8 @@ class ISerializable(ABC):
         
         :param data_json: Json string containing the data to parse and then deserialize.
         :param allow_unknown: Allow unknown fields to be processed, other parameters will determine their use if 'True'.
-        :param add_unknown_as_is: ! Not used yet !
-        :param allow_as_is_unknown_overloading: ! Not used yet !
+        :param add_unknown_as_is: Adds unknown fields/values as-is in the final class if 'allow_unknown' is also 'True'.
+        :param allow_as_is_unknown_overloading: Allow unknown fields/values to overload existing class attributes.
         :param allow_missing_required: ! Not used yet !
         :param allow_missing_nullable: ! Not used yet !
         :param add_unserializable_as_dict: ! Not used yet !
@@ -374,6 +377,7 @@ class ISerializable(ABC):
         :return: The parsed 'ISerializable' class.
         :raises TypeError: If a mismatch between the expected and received data's types is found, requires
          'validate_type' to be set to 'True'.
+        :raises ValueError: If an unknown field is given and cannot be allowed or added back in the final class.
         :raises JSONDecodeError: If the given 'data_json' is not a properly formatted JSON string.
         """
         
@@ -389,7 +393,9 @@ class ISerializable(ABC):
             parsing_depth=parsing_depth,
             do_deep_copy=False,
         )
-    
+
+
+class IDeserializable(ABC):
     @classmethod
     def to_dict(cls):
         pass
